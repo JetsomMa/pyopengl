@@ -1,3 +1,10 @@
+"""
+这个功能的作用： 
+    设置好一个要加载的obj模型，
+    然后设置一个相机角度参数，
+    将自动生成这个角度下的纹理图、深度图、法线数值图、线框图
+"""
+
 import OpenGL
 from OpenGL.GL import *
 from OpenGL.GLUT import *
@@ -16,7 +23,7 @@ normals = []
 texture_id = None  # 纹理ID
 center = (0, 0, 0)  # 模型中心点
 max_size = 10  # 模型最大尺寸
-width, height = 800, 800
+width, height = 1500, 1500
 
 class Camera:
     def __init__(self, reference_point, pitch, yaw, distance):
@@ -153,7 +160,6 @@ def load_texture(texture_path):
     texture_id = glGenTextures(1)
     glBindTexture(GL_TEXTURE_2D, texture_id)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, img.size[0], img.size[1], 0, GL_RGB, GL_UNSIGNED_BYTE, img_data)
 
     return texture_id
@@ -161,18 +167,21 @@ def load_texture(texture_path):
 def create_black_texture():
     black_texture_id = glGenTextures(1)
     glBindTexture(GL_TEXTURE_2D, black_texture_id)
+    
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
     black_data = np.zeros((1, 1, 3), dtype=np.uint8)  # 创建1x1的黑色纹理数据
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, black_data)
     return black_texture_id
 
 def init_gl(width, height):
     glutInit()
-    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH)
+    # 添加抗锯齿的改动
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH | GLUT_MULTISAMPLE)
+    # glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH)
     glutInitWindowSize(width, height)
     glutCreateWindow(b"OBJ Model Wireframe")
     glEnable(GL_DEPTH_TEST)
+    # glEnable(GL_MULTISAMPLE) # 使抗锯齿生效
     
     glMatrixMode(GL_PROJECTION)
     gluPerspective(45, (width/height), 0.1, 50.0)
@@ -281,17 +290,9 @@ def save_depth_image(width, height, filename="depth.png"):
     image = Image.fromarray(depth_image, 'L')
     image.save(filename)
 
-    # depth_buffer = glReadPixels(0, 0, width, height, GL_DEPTH_COMPONENT, GL_FLOAT)
-    # depth_image = np.frombuffer(depth_buffer, dtype=np.float32).reshape(width, height)
-    # depth_image = np.flip(depth_image, axis=0)  # 上下翻转图像
-    # # 可以根据需要将深度图标准化或转换为可视化格式
-    # plt.imshow(depth_image, cmap='gray')  # 使用灰度色彩映射显示深度图
-    # plt.axis('off')
-    # plt.savefig(filename)
-
 # 选择模型
 def select_model(root_dir, model_name):
-    global vertices, faces, texture_coords_indexs, texture_coords, normals, model_root_dir, texture_id, center, max_size
+    global vertices, faces, texture_coords_indexs, texture_coords, normals, texture_id, center, max_size
     model_root_dir = root_dir
     
     init_gl(width, height)
@@ -322,8 +323,8 @@ def cropThePhoto(camera=Camera([0, 0, 0], 0, 0, 10)):
 
 def main():
     # 选择模型
-    # select_model("./model/grondtruth_obj", "scene.obj")
-    select_model("./model/cow", "cow.obj")
+    select_model("./model/grondtruth_obj", "scene.obj")
+    # select_model("./model/cow", "cow.obj")
 
     print("center: ", center)
     print("max_size: ", max_size)
